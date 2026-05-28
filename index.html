@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gomoku">
+<title>Gomoku v1.1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    background: linear-gradient(160deg, #0f0c04, #231700 60%, #0f0c04);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: Georgia, serif; padding: 8px; overflow-x: hidden; color: #f0d080;
+    touch-action: manipulation;
+  }
+  h1 { font-size: clamp(24px,7vw,34px); font-weight: 900; letter-spacing: 6px;
+       text-shadow: 0 2px 20px #c8920088; font-family: 'Palatino Linotype', serif; }
+  .subtitle { color: #9a7030; font-size: 10px; letter-spacing: 5px; margin-top: 2px; margin-bottom: 10px; }
+  .modes { display: flex; gap: 8px; margin-bottom: 12px; }
+  .mode-btn { padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 12px;
+              cursor: pointer; letter-spacing: 1px; transition: all .2s; border: 2px solid #4a3010;
+              background: transparent; color: #c8a84e; }
+  .mode-btn.active { border-color: #f0d080; background: #f0d080; color: #1a1208; }
+  .scoreboard { display: flex; gap: 24px; margin-bottom: 12px; align-items: center;
+                background: #1a120888; border-radius: 12px; padding: 8px 20px; border: 1px solid #4a3010; }
+  .score-col { text-align: center; min-width: 56px; }
+  .score-label { font-size: 11px; color: #9a7030; letter-spacing: 1px; margin-bottom: 2px; }
+  .score-num { font-size: 28px; font-weight: 900; color: #f0d080; line-height: 1; transition: text-shadow .3s; }
+  .score-num.winner { text-shadow: 0 0 14px #f0d08099; }
+  .status { margin-bottom: 10px; font-size: 13px; color: #c8a84e; letter-spacing: 2px;
+            min-height: 20px; text-align: center; }
+  .status.win { color: #f0d080; font-weight: 700; }
+  #board-wrap { position: relative; background: #c8922a; border-radius: 8px; flex-shrink: 0;
+                box-shadow: 0 8px 40px #000000bb, inset 0 0 30px #80500066;
+                border: 3px solid #7a4c0a; cursor: crosshair; user-select: none; }
+  #board-wrap.done, #board-wrap.thinking { cursor: default; }
+  canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+  #hit { position: absolute; top: 0; left: 0; }
+  .buttons { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-primary { padding: 8px 26px; background: linear-gradient(135deg,#f0d080,#c8922a);
+                 border: none; border-radius: 20px; color: #1a1208; font-weight: 700;
+                 font-size: 13px; cursor: pointer; letter-spacing: 1px; }
+  .btn-secondary { padding: 8px 16px; background: transparent; border: 2px solid #4a3010;
+                   border-radius: 20px; color: #9a7030; font-weight: 700; font-size: 12px; cursor: pointer; }
+  .footer { margin-top: 10px; color: #6a5020; font-size: 10px; letter-spacing: 1px; text-align: center; }
+  .version { color: #4a3010; font-size: 9px; margin-top: 4px; text-align: center; }
+  /* Language picker */
+  .lang-bar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+  .lang-btn { padding: 4px 10px; border-radius: 14px; border: 1px solid #4a3010;
+              background: transparent; color: #9a7030; font-size: 13px; cursor: pointer; transition: all .2s; }
+  .lang-btn.active { border-color: #c8a84e; background: #2a1a0088; color: #f0d080; }
+</style>
+</head>
+<body>
+<h1>五目並べ</h1>
+<div class="subtitle">GOMOKU</div>
+
+<!-- Language bar -->
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('de')" id="lang-de">🇩🇪</button>
+  <button class="lang-btn" onclick="setLang('en')" id="lang-en">🇬🇧</button>
+  <button class="lang-btn" onclick="setLang('ja')" id="lang-ja">🇯🇵</button>
+  <button class="lang-btn" onclick="setLang('zh')" id="lang-zh">🇨🇳</button>
+  <button class="lang-btn" onclick="setLang('el')" id="lang-el">🇬🇷</button>
+  <button class="lang-btn" onclick="setLang('pl')" id="lang-pl">🇵🇱</button>
+</div>
+
+<div class="modes">
+  <button class="mode-btn" id="btn-pvp" onclick="setMode('pvp')">👥 <span data-t="pvp"></span></button>
+  <button class="mode-btn active" id="btn-pvc" onclick="setMode('pvc')">🤖 <span data-t="pvc"></span></button>
+</div>
+
+<div class="scoreboard">
+  <div class="score-col">
+    <div class="score-label" id="label-b"></div>
+    <div class="score-num" id="score-b">0</div>
+  </div>
+  <div class="score-col">
+    <div class="score-label" id="label-w"></div>
+    <div class="score-num" id="score-w">0</div>
+  </div>
+</div>
+
+<div class="status" id="status"></div>
+
+<div id="board-wrap">
+  <canvas id="grid"></canvas>
+  <canvas id="stones"></canvas>
+  <div id="hit"></div>
+</div>
+
+<div class="buttons">
+  <button class="btn-primary" onclick="resetGame()" data-t="new"></button>
+  <button class="btn-secondary" onclick="resetScores()" data-t="reset"></button>
+</div>
+<div class="footer" data-t="footer"></div>
+<div class="version">Gomoku v1.1 · © 2026 andrekempeProMetronics</div>
+
+<script>
+// ── Translations ────────────────────────────────────────────────────────────
+const LANGS = {
+  de: {
+    pvp: '2 Spieler', pvc: 'vs KI',
+    you: 'Du', ai: 'KI', black: 'Schwarz', white: 'Weiß',
+    turn: 'Am Zug', thinking: '🤖 KI denkt…',
+    wins: 'gewinnt!', opens: 'eröffnet',
+    new: '↺ Neu', reset: 'Punkte reset',
+    footer: '5 in einer Reihe gewinnt · 15×15 Felder'
+  },
+  en: {
+    pvp: '2 Players', pvc: 'vs AI',
+    you: 'You', ai: 'AI', black: 'Black', white: 'White',
+    turn: 'Turn', thinking: '🤖 AI thinking…',
+    wins: 'wins!', opens: 'opens',
+    new: '↺ New', reset: 'Reset scores',
+    footer: '5 in a row wins · 15×15 board'
+  },
+  ja: {
+    pvp: '2人対戦', pvc: 'vs AI',
+    you: 'あなた', ai: 'AI', black: '黒', white: '白',
+    turn: '番', thinking: '🤖 AI考え中…',
+    wins: '勝ち！', opens: 'が先手',
+    new: '↺ 新しいゲーム', reset: 'スコアリセット',
+    footer: '5つ並べたら勝ち · 15×15'
+  },
+  zh: {
+    pvp: '双人对战', pvc: 'vs AI',
+    you: '你', ai: 'AI', black: '黑', white: '白',
+    turn: '轮到', thinking: '🤖 AI思考中…',
+    wins: '获胜！', opens: '先手',
+    new: '↺ 新游戏', reset: '重置分数',
+    footer: '五子连珠获胜 · 15×15棋盘'
+  },
+  el: {
+    pvp: '2 Παίκτες', pvc: 'vs AI',
+    you: 'Εσύ', ai: 'AI', black: 'Μαύρος', white: 'Άσπρος',
+    turn: 'Σειρά', thinking: '🤖 Σκέφτεται…',
+    wins: 'κερδίζει!', opens: 'ανοίγει',
+    new: '↺ Νέο', reset: 'Μηδενισμός',
+    footer: '5 στη σειρά κερδίζει · 15×15'
+  },
+  pl: {
+    pvp: '2 Graczy', pvc: 'vs AI',
+    you: 'Ty', ai: 'AI', black: 'Czarny', white: 'Biały',
+    turn: 'Ruch', thinking: '🤖 AI myśli…',
+    wins: 'wygrywa!', opens: 'zaczyna',
+    new: '↺ Nowa', reset: 'Reset wyników',
+    footer: '5 z rzędu wygrywa · 15×15'
+  }
+};
+
+let currentLang = 'de';
+
+function t(key) { return LANGS[currentLang][key] || LANGS['de'][key]; }
+
+function setLang(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  // update lang buttons
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('lang-' + lang).classList.add('active');
+  // update static text nodes
+  document.querySelectorAll('[data-t]').forEach(el => {
+    el.textContent = t(el.dataset.t);
+  });
+  // update mode buttons (they have spans inside)
+  document.querySelectorAll('[data-t]').forEach(el => {
+    el.textContent = t(el.dataset.t);
+  });
+  // refresh dynamic UI
+  updateModeButtons();
+  updateStatus();
+  updateScoreLabels();
+}
+
+function updateModeButtons() {
+  document.querySelector('#btn-pvp span').textContent = t('pvp');
+  document.querySelector('#btn-pvc span').textContent = t('pvc');
+}
+
+function playerLabel(p) {
+  if (mode === 'pvc') return p === BLACK ? t('you') : t('ai');
+  return p === BLACK ? t('black') : t('white');
+}
+function playerIcon(p) { return p === BLACK ? '⚫' : '⚪'; }
+
+function updateScoreLabels() {
+  document.getElementById('label-b').textContent = '⚫ ' + playerLabel(BLACK);
+  document.getElementById('label-w').textContent = '⚪ ' + playerLabel(WHITE);
+}
+
+function updateStatus() {
+  const el = document.getElementById('status');
+  if (winner) {
+    const next = winner === BLACK ? WHITE : BLACK;
+    el.textContent = `🏆 ${playerIcon(winner)} ${playerLabel(winner)} ${t('wins')} — ${playerIcon(next)} ${playerLabel(next)} ${t('opens')}`;
+    el.className = 'status win';
+  } else if (thinking) {
+    el.textContent = t('thinking');
+    el.className = 'status';
+  } else {
+    el.textContent = `${t('turn')}: ${playerIcon(current)} ${playerLabel(current)}`;
+    el.className = 'status';
+  }
+  document.getElementById('board-wrap').className = winner ? 'done' : thinking ? 'thinking' : '';
+  document.getElementById('score-b').textContent = scoreB;
+  document.getElementById('score-w').textContent = scoreW;
+  document.getElementById('score-b').className = 'score-num' + (winner===BLACK?' winner':'');
+  document.getElementById('score-w').className = 'score-num' + (winner===WHITE?' winner':'');
+  updateScoreLabels();
+}
+
+// ── Game constants ──────────────────────────────────────────────────────────
+const SIZE=15, EMPTY=0, BLACK=1, WHITE=2, WIN=5, DEPTH=3, MAX_CANDS=15;
+
+let board, current, winner, winLine, lastMove, thinking, moveCount;
+let scoreB=0, scoreW=0, starter=BLACK, mode='pvc';
+let CELL, PAD, STONE, BP, boardPx;
+let aiTimer=null;
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+function calcLayout() {
+  const max=Math.min(window.innerWidth-16, window.innerHeight*0.82, 580);
+  CELL=Math.floor(max/(SIZE+1)); PAD=CELL; STONE=Math.round(CELL*0.42); BP=(SIZE-1)*CELL; boardPx=BP+PAD*2;
+  const wrap=document.getElementById('board-wrap');
+  wrap.style.width=boardPx+'px'; wrap.style.height=boardPx+'px';
+  ['grid','stones'].forEach(id=>{
+    const c=document.getElementById(id);
+    c.width=boardPx; c.height=boardPx; c.style.width=boardPx+'px'; c.style.height=boardPx+'px';
+  });
+  const hit=document.getElementById('hit');
+  hit.style.width=boardPx+'px'; hit.style.height=boardPx+'px';
+}
+
+// ── Drawing ─────────────────────────────────────────────────────────────────
+function drawGrid() {
+  const ctx=document.getElementById('grid').getContext('2d');
+  ctx.clearRect(0,0,boardPx,boardPx);
+  ctx.strokeStyle='#7a4500';
+  for(let i=0;i<SIZE;i++){
+    ctx.lineWidth=(i===0||i===SIZE-1)?2:0.8; ctx.globalAlpha=0.75;
+    ctx.beginPath();ctx.moveTo(PAD+i*CELL,PAD);ctx.lineTo(PAD+i*CELL,PAD+BP);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PAD,PAD+i*CELL);ctx.lineTo(PAD+BP,PAD+i*CELL);ctx.stroke();
+  }
+  [[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]].forEach(([r,c])=>{
+    ctx.globalAlpha=0.85; ctx.fillStyle='#7a4500';
+    ctx.beginPath(); ctx.arc(PAD+c*CELL,PAD+r*CELL,Math.max(3,CELL*0.1),0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawStones() {
+  const ctx=document.getElementById('stones').getContext('2d');
+  ctx.clearRect(0,0,boardPx,boardPx);
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(board[r][c]===EMPTY)continue;
+    const x=PAD+c*CELL,y=PAD+r*CELL;
+    const isW=winLine&&winLine.some(([wr,wc])=>wr===r&&wc===c);
+    ctx.shadowColor=isW?'#f0d080':'#000'; ctx.shadowBlur=isW?12:5;
+    const g=ctx.createRadialGradient(x-STONE*0.3,y-STONE*0.3,STONE*0.1,x,y,STONE);
+    if(board[r][c]===BLACK){g.addColorStop(0,'#777');g.addColorStop(0.6,'#111');g.addColorStop(1,'#000');}
+    else{g.addColorStop(0,'#fff');g.addColorStop(0.5,'#e0e0e0');g.addColorStop(1,'#bbb');}
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,STONE,0,Math.PI*2); ctx.fill();
+    if(isW){ctx.shadowBlur=0;ctx.strokeStyle='#f0d080';ctx.lineWidth=3;ctx.stroke();}
+    ctx.shadowBlur=0;
+  }
+  if(lastMove&&!winner){
+    const[lr,lc]=lastMove;
+    ctx.fillStyle='#e05030';
+    ctx.beginPath();ctx.arc(PAD+lc*CELL,PAD+lr*CELL,CELL*0.12,0,Math.PI*2);ctx.fill();
+  }
+}
+
+function buildHitTargets(){
+  const hit=document.getElementById('hit'); hit.innerHTML='';
+  if(winner||thinking)return;
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(board[r][c]!==EMPTY)continue;
+    const d=document.createElement('div');
+    d.style.cssText=`position:absolute;left:${PAD+c*CELL-CELL/2}px;top:${PAD+r*CELL-CELL/2}px;width:${CELL}px;height:${CELL}px;`;
+    d.dataset.r=r; d.dataset.c=c;
+    d.addEventListener('click',onCellClick);
+    hit.appendChild(d);
+  }
+}
+
+function render(){ drawStones(); buildHitTargets(); updateStatus(); }
+
+// ── AI ───────────────────────────────────────────────────────────────────────
+function threatAtCell(b,r,c,player){
+  const opp=player===BLACK?WHITE:BLACK, dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  let total=0;
+  for(const[dr,dc]of dirs){
+    let cF=0,cB=0,oF=0,oB=0,sF=1,sB=0;
+    let nr=r+dr,nc=c+dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===player){cF++;sF++;nr+=dr;nc+=dc;}
+    if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){oF=1;sF++;}
+    nr=r-dr;nc=c-dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===player){cB++;sB++;nr-=dr;nc-=dc;}
+    if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){oB=1;sB++;}
+    if(sF+sB<WIN)continue;
+    const tv=cF+cB+1,oe=oF+oB;
+    if(tv>=5)total+=100000;
+    else if(tv===4&&oe===2)total+=10000;
+    else if(tv===4&&oe===1)total+=5000;
+    else if(tv===3&&oe===2)total+=1000;
+    else if(tv===3&&oe===1)total+=200;
+  }
+  return total;
+}
+
+function cellScore(b,r,c,player){
+  const opp=player===BLACK?WHITE:BLACK,dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  let score=0;
+  for(const[dr,dc]of dirs){
+    let mine=0,oA=0,oB=0,sp=1;
+    let nr=r+dr,nc=c+dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===player){mine++;sp++;nr+=dr;nc+=dc;}
+    if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]!==opp&&b[nr][nc]!==player){oA=1;sp++;}
+    nr=r-dr;nc=c-dc;
+    while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===player){mine++;sp++;nr-=dr;nc-=dc;}
+    if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]!==opp&&b[nr][nc]!==player){oB=1;sp++;}
+    if(sp<WIN)continue;
+    const tv=mine+1,oe=oA+oB;
+    if(tv>=5)score+=100000;
+    else if(tv===4&&oe===2)score+=50000;
+    else if(tv===4&&oe===1)score+=8000;
+    else if(tv===3&&oe===2)score+=8000;
+    else if(tv===3&&oe===1)score+=1000;
+    else if(tv===2&&oe===2)score+=500;
+    else if(tv===2&&oe===1)score+=100;
+    else score+=10;
+  }
+  return score;
+}
+
+function getCandidates(b,aiP){
+  const opp=aiP===BLACK?WHITE:BLACK,seen=new Uint8Array(SIZE*SIZE),out=[],dirs4=[[1,0],[0,1],[1,1],[1,-1]];
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(b[r][c]===EMPTY)continue;
+    for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+      if(!dr&&!dc)continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==EMPTY)continue;
+      const i=nr*SIZE+nc; if(!seen[i]){seen[i]=1;out.push([nr,nc]);}
+    }
+    for(const[dr,dc]of dirs4){
+      let nr=r+dr,nc=c+dc;
+      while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===b[r][c]){nr+=dr;nc+=dc;}
+      if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){const i=nr*SIZE+nc;if(!seen[i]){seen[i]=1;out.push([nr,nc]);}}
+      nr=r-dr;nc=c-dc;
+      while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===b[r][c]){nr-=dr;nc-=dc;}
+      if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){const i=nr*SIZE+nc;if(!seen[i]){seen[i]=1;out.push([nr,nc]);}}
+    }
+  }
+  if(!out.length)return[[7,7]];
+  const sc=out.map(([r,c])=>({r,c,s:Math.max(cellScore(b,r,c,aiP),cellScore(b,r,c,opp)*1.1)}));
+  sc.sort((a,b)=>b.s-a.s);
+  return sc.slice(0,MAX_CANDS).map(({r,c})=>[r,c]);
+}
+
+const ST=[[0,0,0],[0,1,5],[0,50,500],[0,500,8000],[0,5000,50000],[100000,100000,100000]];
+function evalDir(b,r,c,dr,dc,p){
+  const opp=p===BLACK?WHITE:BLACK;let mine=1,oe=0,sp=1;
+  let nr=r+dr,nc=c+dc;
+  while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===p){mine++;sp++;nr+=dr;nc+=dc;}
+  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){oe++;sp++;}
+  nr=r-dr;nc=c-dc;
+  while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===p){mine++;sp++;nr-=dr;nc-=dc;}
+  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&b[nr][nc]===EMPTY){oe++;sp++;}
+  if(sp<WIN)return 0;
+  return ST[Math.min(mine,5)][oe];
+}
+
+function evalBoard(b,aiP){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];let score=0;
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(b[r][c]===EMPTY)continue;
+    const p=b[r][c],mul=p===aiP?1:-1.1;
+    for(const[dr,dc]of dirs){
+      const pr=r-dr,pc=c-dc;
+      if(pr>=0&&pr<SIZE&&pc>=0&&pc<SIZE&&b[pr][pc]===p)continue;
+      score+=mul*evalDir(b,r,c,dr,dc,p);
+    }
+  }
+  return score;
+}
+
+function minimax(b,depth,alpha,beta,max,aiP,lR,lC,lP){
+  if(lR!==null&&checkWin(b,lR,lC,lP))return max?-200000-depth:200000+depth;
+  if(depth===0)return evalBoard(b,aiP);
+  const cur=max?aiP:(aiP===BLACK?WHITE:BLACK);
+  const cands=getCandidates(b,aiP);
+  if(max){
+    let best=-Infinity;
+    for(const[r,c]of cands){b[r][c]=cur;const v=minimax(b,depth-1,alpha,beta,false,aiP,r,c,cur);b[r][c]=EMPTY;if(v>best)best=v;if(v>alpha)alpha=v;if(beta<=alpha)break;}
+    return best;
+  }else{
+    let best=Infinity;
+    for(const[r,c]of cands){b[r][c]=cur;const v=minimax(b,depth-1,alpha,beta,true,aiP,r,c,cur);b[r][c]=EMPTY;if(v<best)best=v;if(v<beta)beta=v;if(beta<=alpha)break;}
+    return best;
+  }
+}
+
+function checkWin(b,r,c,p){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const[dr,dc]of dirs){
+    let n=1;
+    for(let s=1;s<WIN;s++){const nr=r+dr*s,nc=c+dc*s;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==p)break;n++;}
+    for(let s=1;s<WIN;s++){const nr=r-dr*s,nc=c-dc*s;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==p)break;n++;}
+    if(n>=WIN)return true;
+  }
+  return false;
+}
+
+function getWinLine(b,r,c,p){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const[dr,dc]of dirs){
+    let cells=[[r,c]];
+    for(let s=1;s<WIN;s++){const nr=r+dr*s,nc=c+dc*s;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==p)break;cells.push([nr,nc]);}
+    for(let s=1;s<WIN;s++){const nr=r-dr*s,nc=c-dc*s;if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==p)break;cells.push([nr,nc]);}
+    if(cells.length>=WIN)return cells;
+  }
+  return null;
+}
+
+function computeAIMove(b,aiP){
+  const opp=aiP===BLACK?WHITE:BLACK;
+  let sc=0;for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)if(b[r][c]!==EMPTY)sc++;
+  if(sc===0)return[7,7];
+  const cands=getCandidates(b,aiP);
+  for(const[r,c]of cands){b[r][c]=aiP;const w=checkWin(b,r,c,aiP);b[r][c]=EMPTY;if(w)return[r,c];}
+  for(const[r,c]of cands){b[r][c]=opp;const w=checkWin(b,r,c,opp);b[r][c]=EMPTY;if(w)return[r,c];}
+  let bB=null,bBt=0;
+  for(const[r,c]of cands){const tv=threatAtCell(b,r,c,opp);if(tv>=5000&&tv>bBt){bBt=tv;bB=[r,c];}}
+  if(bB)return bB;
+  for(const[r,c]of cands){const tv=threatAtCell(b,r,c,aiP);if(tv>=5000)return[r,c];}
+  let bF=null,bFt=0;
+  for(const[r,c]of cands){const tv=threatAtCell(b,r,c,opp);if(tv>=2000&&tv>bFt){bFt=tv;bF=[r,c];}}
+  if(bF)return bF;
+  for(const[r,c]of cands){const tv=threatAtCell(b,r,c,aiP);if(tv>=2000)return[r,c];}
+  if(sc<=3){
+    let best=null,bs=-Infinity;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      if(b[r][c]!==opp)continue;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        if(!dr&&!dc)continue;
+        const nr=r+dr,nc=c+dc;
+        if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||b[nr][nc]!==EMPTY)continue;
+        const s=-(Math.abs(nr-7)+Math.abs(nc-7))+Math.random()*1.5;
+        if(s>bs){bs=s;best=[nr,nc];}
+      }
+    }
+    if(best)return best;
+  }
+  let bT=null,bTt=0;
+  for(const[r,c]of cands){const tv=threatAtCell(b,r,c,opp);if(tv>=1000&&tv>bTt){bTt=tv;bT=[r,c];}}
+  let bestS=-Infinity,bestM=cands[0];
+  for(const[r,c]of cands){
+    b[r][c]=aiP;
+    const s=minimax(b,DEPTH-1,-Infinity,Infinity,false,aiP,r,c,aiP);
+    b[r][c]=EMPTY;
+    if(s>bestS){bestS=s;bestM=[r,c];}
+  }
+  if(bT&&bestS<3000)return bT;
+  return bestM;
+}
+
+// ── AI runner ────────────────────────────────────────────────────────────────
+function runAI(){
+  if(aiTimer)clearTimeout(aiTimer);
+  thinking=true; updateStatus(); buildHitTargets();
+  const snap=board.map(r=>[...r]);
+  aiTimer=setTimeout(()=>{
+    const wb=snap.map(r=>[...r]);
+    const[ar,ac]=computeAIMove(wb,WHITE);
+    board[ar][ac]=WHITE; lastMove=[ar,ac]; moveCount++;
+    if(checkWin(board,ar,ac,WHITE)){
+      winner=WHITE; winLine=getWinLine(board,ar,ac,WHITE);
+      scoreW++; starter=BLACK;
+    }else{ current=BLACK; }
+    thinking=false; render();
+  },80);
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+function onCellClick(e){
+  const r=+e.currentTarget.dataset.r,c=+e.currentTarget.dataset.c;
+  if(winner||board[r][c]!==EMPTY||thinking)return;
+  board[r][c]=current; lastMove=[r,c]; moveCount++;
+  if(checkWin(board,r,c,current)){
+    winner=current; winLine=getWinLine(board,r,c,current);
+    if(current===BLACK){scoreB++;starter=WHITE;}else{scoreW++;starter=BLACK;}
+    render(); return;
+  }
+  current=current===BLACK?WHITE:BLACK;
+  render();
+  if(mode==='pvc'&&current===WHITE)runAI();
+}
+
+// ── Game control ──────────────────────────────────────────────────────────────
+function createBoard(){return Array(SIZE).fill(null).map(()=>new Array(SIZE).fill(EMPTY));}
+
+function startGame(s){
+  if(aiTimer){clearTimeout(aiTimer);aiTimer=null;}
+  board=createBoard(); winner=null; winLine=null; lastMove=null; thinking=false; moveCount=0;
+  if(s===WHITE){ board[7][7]=WHITE; lastMove=[7,7]; moveCount=1; current=BLACK; }
+  else{ current=BLACK; }
+  render();
+}
+
+function resetGame(){ startGame(starter); }
+function resetScores(){ scoreB=0; scoreW=0; starter=BLACK; startGame(BLACK); }
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btn-pvp').className='mode-btn'+(m==='pvp'?' active':'');
+  document.getElementById('btn-pvc').className='mode-btn'+(m==='pvc'?' active':'');
+  starter=BLACK; startGame(BLACK);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{ calcLayout(); drawGrid(); render(); });
+calcLayout(); drawGrid();
+setLang('de');   // init translations
+startGame(BLACK);
+</script>
+</body>
+</html>
