@@ -4,8 +4,21 @@ Lazy Holiday Production, will update from time to time.
 Most effort went into making the AI a realistic opponent
 - 
 
-******* HOW TO PlAY
+******* QUICK CONFIGURE
 - choose 2 players or vs. AI first
+- choose your oponent:
+There are 3 different play modes, that will provide a different type of opponent.
+
+1. Simple — Minimax algorithm: fast and predictable, but it acts always the same.
+2. Master — The algo randomly selects from 8 authentic opening sequences (the first 6–7 moves taken from master games), followed by a strong Minimax engine. Every game begins differently. Use this, if you want to study strategy of masters.
+3. Creative — MCTS with a time budget. Plays statistically and organically, sometimes making surprising moves. Use this if you want to play with most diversity.
+
+Strength is adjustable via the Quick/Strong toggle. 
+Quick/Strong — Applies to both Master and Creative modes:
+Quick = 300ms (fluid)
+Strong = 1000ms (stronger—particularly noticeable with MCTS)
+
+******* HOW TO PlAY
 - You are the black player, try to put 5 Stones in a row
 - The edge positions can be occupied as well
 
