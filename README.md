@@ -9,9 +9,15 @@ Most effort went into making the AI a realistic opponent
 - choose your oponent:
 There are 3 different play modes, that will provide a different type of opponent.
 
-1. Simple — Minimax algorithm: fast and predictable, but it acts always the same.
+1. Simple — Minimax algorithm: plays deterministically and tactically—given the same position, it always makes the same move. It responds well to direct threats but lacks a strategic plan. Use this if you want to get the basic logic
+
 2. Master — The algo randomly selects from 8 authentic opening sequences (the first 6–7 moves taken from master games), followed by a strong Minimax engine. Every game begins differently. Use this, if you want to study strategy of masters.
-3. Creative — MCTS with a time budget. Plays statistically and organically, sometimes making surprising moves. Use this if you want to play with most diversity.
+
+  3. Creative — MCTS with a time budget. MCTS plays statistically and strategically—it thinks in terms of probabilities rather than fixed evaluations. This creates several noticeable differences:
+  It plays more variably—the same opening leads to different games because the simulations involve a degree of randomness.
+  It develops long-term structures—MCTS recognizes that certain board configurations statistically lead to victory, even if the immediate tactical advantage is not yet apparent.
+  It makes more human-like errors—sometimes it overlooks a direct threat because the simulations happened to turn out unfavorably in that specific instance. This makes its gameplay feel less mechanical.
+  It grows stronger over time—a larger time budget results in stronger play. You could even implement a difficulty slider that simply adjusts the time budget: 200ms for Easy, 1000ms for Hard. Use this if you want to play with most diversity.
 
 Strength is adjustable via the Quick/Strong toggle. 
 Quick/Strong — Applies to both Master and Creative modes:
