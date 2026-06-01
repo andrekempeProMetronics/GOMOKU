@@ -1,5 +1,5 @@
 # GOMOKU
-Gomoku game vs. AI or 2 players - ZERO internet required
+Gomoku game vs. Computer or 2 players - ZERO internet required
 Lazy Holiday Production, will update from time to time.
 Most effort went into making the AI a realistic opponent
 - 
