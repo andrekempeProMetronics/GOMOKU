@@ -38,8 +38,8 @@ Strong = 1000ms (stronger—particularly noticeable with MCTS)
 - the looser owns the 1 put
 - Enjoy
 
-<img width="1315" height="1792" alt="image" src="https://github.com/user-attachments/assets/ed461fe5-2526-4eaa-9132-f71cf6452529" />
-<img width="1323" height="1730" alt="image" src="https://github.com/user-attachments/assets/3cecba89-64c2-40bf-9299-61ecced337c3" />
+<img width="406" height="634" alt="grafik" src="https://github.com/user-attachments/assets/bb12630a-cbd2-4a60-9aed-0644a9fe6a32" />
+
 
 ******* Tested on edge and firefox
 on ipad and iphone
